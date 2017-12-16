@@ -385,6 +385,64 @@ class EDLAdapterTest(unittest.TestCase):
             '* FROM FILE: S:\\var\\tmp\\test.exr\n'
         )
 
+    def test_nucoda_edl_write_with_transition(self):
+        track = otio.schema.Track()
+        tl = otio.schema.Timeline("test_nucoda_timeline", tracks=[track])
+        rt = otio.opentime.RationalTime(48.0, 24.0)
+        mr1 = otio.media_reference.External(target_url=r"S:\var\tmp_1\test.exr")
+        mr2 = otio.media_reference.External(target_url=r"S:\var\tmp_2\test.exr")
+        mr3 = otio.media_reference.External(target_url=r"S:\var\tmp_3\test.exr")
+
+        tr = otio.opentime.TimeRange(
+            start_time=otio.opentime.RationalTime(1.0, 24.0),
+            duration=rt
+        )
+        cl = otio.schema.Clip(
+            name="test clip 1",
+            media_reference=mr1,
+            source_range=tr,
+        )
+        trans = otio.schema.Transition(in_offset=otio.opentime.RationalTime(12.0, 24.0),
+                                       out_offset=otio.opentime.RationalTime(24.0, 24.0))
+        cl2 = otio.schema.Clip(
+            name="test clip 2",
+            media_reference=mr2,
+            source_range=tr,
+        )
+        cl3 = otio.schema.Clip(
+            name="test clip 3",
+            media_reference=mr3,
+            source_range=tr,
+        )
+        tl.tracks[0].name = "V"
+        tl.tracks[0].append(cl)
+        tl.tracks[0].append(trans)
+        tl.tracks[0].append(cl2)
+        tl.tracks[0].append(cl3)
+
+        result = otio.adapters.write_to_string(
+            tl,
+            adapter_name='cmx_3600',
+            style='nucoda'
+        )
+
+        self.assertEqual(
+            result,
+            'TITLE: test_nucoda_timeline\n\n'
+            '001  AX       V     C        00:00:00:01 00:00:01:13 00:00:00:00 00:00:01:12\n'
+            '* FROM CLIP NAME:  test clip 1\n'
+            '* FROM FILE: S:\\var\\tmp_1\\test.exr\n'
+            '002  AX       V     C        00:00:01:13 00:00:01:13 00:00:01:12 00:00:01:12\n'
+            '002  AX       V     D 036    00:00:00:01 00:00:02:13 00:00:01:12 00:00:04:00\n'
+            '* FROM CLIP NAME:  test clip 1\n'
+            '* FROM FILE: S:\\var\\tmp_1\\test.exr\n'
+            '* TO CLIP NAME:  test clip 2\n'
+            '* TO FILE: S:\\var\\tmp_2\\test.exr\n'
+            '003  AX       V     C        00:00:00:01 00:00:02:01 00:00:04:00 00:00:06:00\n'
+            '* FROM CLIP NAME:  test clip 3\n'
+            '* FROM FILE: S:\\var\\tmp_3\\test.exr\n'
+        )
+
     def test_mixed_avid_nucoda_read_raises_exception(self):
         with self.assertRaises(cmx_3600.EDLParseError):
             otio.adapters.read_from_string(

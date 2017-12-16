@@ -608,21 +608,69 @@ def write_to_string(input_otio, rate=None, style='avid'):
     track = input_otio.tracks[0]
     edl_rate = rate or track.duration().rate
     kind = "V" if track.kind == otio.schema.TrackKind.Video else "A"
-    for i, clip in enumerate(track):
+    look_ahead = lookahead_enumerate(track)
+    for i, clip, next_clip, next_next_clip in look_ahead:
         edit_number += 1
 
-        event_line = EventLine(edit_number=edit_number, kind=kind, rate=edl_rate)
-        event_line.source_in = clip.source_range.start_time
-        event_line.source_out = clip.source_range.end_time_exclusive()
-        range_in_track = track.range_of_child_at_index(i)
-        event_line.record_in = range_in_track.start_time
-        event_line.record_out = range_in_track.end_time_exclusive()
-        if clip.media_reference and isinstance(clip.media_reference, otio.schema.Gap):
-            event_line.reel = 'BL'
+        if isinstance(next_clip, otio.schema.Transition):
+            a_side, trans, b_side = clip, next_clip, next_next_clip
 
-        lines.append(str(event_line))
-        lines += generate_comment_lines(clip, style=style, edl_rate=edl_rate)
-        lines.append("")
+            # Add a line to represent this, SHORTER, event
+            a_side_line = EventLine(kind=kind, edit_number=edit_number, rate=edl_rate)
+            a_side_line.source_in = a_side.source_range.start_time
+            a_side_line.source_out = a_side.source_range.end_time_exclusive() - next_clip.in_offset
+            a_range_in_track = track.range_of_child_at_index(i)
+            a_side_line.record_in = a_range_in_track.start_time
+            a_side_line.record_out = a_range_in_track.end_time_exclusive() - next_clip.in_offset
+            if a_side.media_reference and isinstance(a_side.media_reference, otio.schema.Gap):
+                a_side_line.reel = 'BL'
+
+            # Advance the edit number
+            edit_number += 1
+
+            b_side_line = EventLine(kind=kind, edit_number=edit_number, rate=edl_rate)
+            b_side_line.source_in = b_side.source_range.start_time
+            b_side_line.source_out = b_side.source_range.end_time_exclusive() + trans.in_offset
+            b_range_in_track = track.range_of_child_at_index(i + 2)
+            b_side_line.record_in = a_side_line.record_out
+            b_side_line.record_out = b_range_in_track.end_time_exclusive()
+            b_side_line.dissolve_length = trans.in_offset + trans.out_offset
+            if b_side.media_reference and isinstance(b_side.media_reference, otio.schema.Gap):
+                b_side_line.reel = 'BL'
+
+            # Add a line to represent the middle cut
+            cut_line = EventLine(kind=kind, edit_number=edit_number, rate=edl_rate)
+            cut_line.reel = b_side_line.reel
+            cut_line.source_in = a_side_line.source_out
+            cut_line.source_out = a_side_line.source_out
+            cut_line.record_in = a_side_line.record_out
+            cut_line.record_out = a_side_line.record_out
+
+            # Add the lines
+            lines.append(str(a_side_line))
+            lines += generate_comment_lines(a_side, style=style, edl_rate=edl_rate)
+            lines.append(str(cut_line))
+            lines.append(str(b_side_line))
+            lines += generate_comment_lines(a_side, style=style, edl_rate=edl_rate)
+            lines += generate_comment_lines(b_side, style=style, edl_rate=edl_rate, from_or_to='TO')
+
+            # Advance the iterater past the next 2 children (trans and clip b)
+            look_ahead.next()
+            look_ahead.next()
+
+        else:
+            event_line = EventLine(edit_number=edit_number, kind=kind, rate=edl_rate)
+            event_line.source_in = clip.source_range.start_time
+            event_line.source_out = clip.source_range.end_time_exclusive()
+            range_in_track = track.range_of_child_at_index(i)
+            event_line.record_in = range_in_track.start_time
+            event_line.record_out = range_in_track.end_time_exclusive()
+            if clip.media_reference and isinstance(clip.media_reference, otio.schema.Gap):
+                event_line.reel = 'BL'
+
+            lines.append(str(event_line))
+            lines += generate_comment_lines(clip, style=style, edl_rate=edl_rate)
+            lines.append("")
 
     text = "\n".join(lines)
     return text
@@ -698,6 +746,23 @@ def generate_comment_lines(clip, style, edl_rate, from_or_to='FROM'):
     return lines
 
 
+def lookahead_enumerate(iterable):
+    iterator = iter(iterable)
+    i = 0
+    a = iterator.next()
+    try:
+        b = iterator.next()
+        for c in iterator:
+            yield (i, a, b, c)
+            a, b, i = b, c, i + 1
+        b, c = a, b
+        yield (i, b, c, None)
+        i += 1
+        yield (i, c, None, None)
+    except StopIteration:
+        yield (i, a, None, None)
+
+
 class EventLine(object):
     def __init__(self, edit_number=0, reel='AX', kind='V', rate=None):
         self.__rate = rate
@@ -711,6 +776,8 @@ class EventLine(object):
         self.record_in = otio.opentime.RationalTime(0.0, rate=rate)
         self.record_out = otio.opentime.RationalTime(0.0, rate=rate)
 
+        self.dissolve_length = otio.opentime.RationalTime(0.0, rate)
+
     def __str__(self):
         ser = {
             'edit': self.edit_number,
@@ -720,6 +787,10 @@ class EventLine(object):
             'src_out': otio.opentime.to_timecode(self.source_out, self.__rate),
             'rec_in': otio.opentime.to_timecode(self.record_in, self.__rate),
             'rec_out': otio.opentime.to_timecode(self.record_out, self.__rate),
+            'diss': int(otio.opentime.to_frames(self.dissolve_length, self.__rate)),
         }
 
-        return "{edit:03d}  {reel:8} {kind:5} C        {src_in} {src_out} {rec_in} {rec_out}".format(**ser)
+        if self.dissolve_length.value > 0:
+            return "{edit:03d}  {reel:8} {kind:5} D {diss:03d}    {src_in} {src_out} {rec_in} {rec_out}".format(**ser)
+        else:
+            return "{edit:03d}  {reel:8} {kind:5} C        {src_in} {src_out} {rec_in} {rec_out}".format(**ser)
