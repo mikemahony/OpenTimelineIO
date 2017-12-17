@@ -647,6 +647,8 @@ def write_to_string(input_otio, rate=None, style='avid'):
                 and isinstance(a_side.media_reference, otio.schema.Gap)
             ):
                 a_side_line.reel = 'BL'
+            elif a_side.metadata.get('cmx_3600', {}).get('reel'):
+                a_side_line.reel = a_side.metadata.get('cmx_3600').get('reel')
 
             # Advance the edit number
             edit_number += 1
@@ -669,6 +671,8 @@ def write_to_string(input_otio, rate=None, style='avid'):
                 and isinstance(b_side.media_reference, otio.schema.Gap)
             ):
                 b_side_line.reel = 'BL'
+            elif b_side.metadata.get('cmx_3600', {}).get('reel'):
+                b_side_line.reel = b_side.metadata.get('cmx_3600').get('reel')
 
             # Event line to represent the middle cut
             cut_line = EventLine(
@@ -723,6 +727,8 @@ def write_to_string(input_otio, rate=None, style='avid'):
                 and isinstance(clip.media_reference, otio.schema.Gap)
             ):
                 event_line.reel = 'BL'
+            elif clip.metadata.get('cmx_3600', {}).get('reel'):
+                event_line.reel = clip.metadata.get('cmx_3600').get('reel')
 
             lines.append(str(event_line))
             lines += generate_comment_lines(
