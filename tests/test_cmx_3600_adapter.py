@@ -453,9 +453,6 @@ class EDLAdapterTest(unittest.TestCase):
         track = otio.schema.Track()
         tl = otio.schema.Timeline(tracks=[track])
 
-        # 001 v330_21f V  C  131 276
-        # 002 v330_23e V  C  223 423
-
         cl = otio.schema.Clip(
             source_range=otio.opentime.TimeRange(
                 start_time=otio.opentime.RationalTime(131.0, 24.0),
@@ -489,19 +486,11 @@ class EDLAdapterTest(unittest.TestCase):
             style='nucoda'
         )
 
-        expected = '001  AX       V     C        00:00:05:11 00:00:09:10 00:00:00:00 00:00:03:23\n' \
-            '002  AX       V     C        00:00:09:10 00:00:09:10 00:00:03:23 00:00:03:23\n' \
-            '002  AX       V     D 100    00:00:05:03 00:00:17:15 00:00:03:23 00:00:16:11\n' \
-            '003  AX       V     C        00:00:00:00 00:00:01:00 00:00:16:11 00:00:17:11\n'
-
-        print
-        print("EXPECTED:")
-        print(expected)
-        print
-
-        print("ACTUAL:")
-        print(result)
-        print
+        expected = \
+            '001  AX       V     C        00:00:05:11 00:00:07:08 00:00:00:00 00:00:01:21\n' \
+            '002  AX       V     C        00:00:07:08 00:00:07:08 00:00:01:21 00:00:01:21\n' \
+            '002  AX       V     D 100    00:00:05:03 00:00:17:15 00:00:01:21 00:00:14:09\n' \
+            '003  AX       V     C        00:00:00:00 00:00:01:00 00:00:14:09 00:00:15:09\n'
 
         self.assertEqual(result, expected)
 
