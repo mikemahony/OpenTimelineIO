@@ -449,6 +449,33 @@ class EDLAdapterTest(unittest.TestCase):
             '* FROM FILE: S:\\tmp_3\\test.exr\n'
         )
 
+    def test_custom_reel_names(self):
+        track = otio.schema.Track()
+        tl = otio.schema.Timeline(tracks=[track])
+        tr = otio.opentime.TimeRange(
+            start_time=otio.opentime.RationalTime(1.0, 24.0),
+            duration=otio.opentime.RationalTime(24.0, 24.0)
+        )
+        cl = otio.schema.Clip(
+            source_range=tr
+        )
+        cl.metadata['cmx_3600'] = {
+            'reel': 'v330_21f'
+        }
+        tl.tracks[0].append(cl)
+
+        result = otio.adapters.write_to_string(
+            tl,
+            adapter_name='cmx_3600',
+            style='nucoda'
+        )
+
+        self.assertEqual(
+            result,
+            '001  v330_21f V     C        '
+            '00:00:00:01 00:00:01:01 00:00:00:00 00:00:01:00\n'
+        )
+
     def test_mixed_avid_nucoda_read_raises_exception(self):
         with self.assertRaises(cmx_3600.EDLParseError):
             otio.adapters.read_from_string(
