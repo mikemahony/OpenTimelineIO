@@ -616,30 +616,51 @@ def write_to_string(input_otio, rate=None, style='avid'):
             a_side, trans, b_side = clip, next_clip, next_next_clip
 
             # Add a line to represent this, SHORTER, event
-            a_side_line = EventLine(kind=kind, edit_number=edit_number, rate=edl_rate)
+            a_side_line = EventLine(
+                kind=kind,
+                edit_number=edit_number,
+                rate=edl_rate
+            )
             a_side_line.source_in = a_side.source_range.start_time
-            a_side_line.source_out = a_side.source_range.end_time_exclusive() - next_clip.in_offset
+            a_side_line.source_out = a_side.source_range.end_time_exclusive() \
+                - next_clip.in_offset
             a_range_in_track = track.range_of_child_at_index(i)
             a_side_line.record_in = a_range_in_track.start_time
-            a_side_line.record_out = a_range_in_track.end_time_exclusive() - next_clip.in_offset
-            if a_side.media_reference and isinstance(a_side.media_reference, otio.schema.Gap):
+            a_side_line.record_out = a_range_in_track.end_time_exclusive() \
+                - next_clip.in_offset
+            if (
+                a_side.media_reference
+                and isinstance(a_side.media_reference, otio.schema.Gap)
+            ):
                 a_side_line.reel = 'BL'
 
             # Advance the edit number
             edit_number += 1
 
-            b_side_line = EventLine(kind=kind, edit_number=edit_number, rate=edl_rate)
+            b_side_line = EventLine(
+                kind=kind,
+                edit_number=edit_number,
+                rate=edl_rate
+            )
             b_side_line.source_in = b_side.source_range.start_time
-            b_side_line.source_out = b_side.source_range.end_time_exclusive() + trans.in_offset
+            b_side_line.source_out = b_side.source_range.end_time_exclusive() \
+                + trans.in_offset
             b_range_in_track = track.range_of_child_at_index(i + 2)
             b_side_line.record_in = a_side_line.record_out
             b_side_line.record_out = b_range_in_track.end_time_exclusive()
             b_side_line.dissolve_length = trans.in_offset + trans.out_offset
-            if b_side.media_reference and isinstance(b_side.media_reference, otio.schema.Gap):
+            if (
+                b_side.media_reference
+                and isinstance(b_side.media_reference, otio.schema.Gap)
+            ):
                 b_side_line.reel = 'BL'
 
             # Add a line to represent the middle cut
-            cut_line = EventLine(kind=kind, edit_number=edit_number, rate=edl_rate)
+            cut_line = EventLine(
+                kind=kind,
+                edit_number=edit_number,
+                rate=edl_rate
+            )
             cut_line.reel = b_side_line.reel
             cut_line.source_in = a_side_line.source_out
             cut_line.source_out = a_side_line.source_out
@@ -648,28 +669,52 @@ def write_to_string(input_otio, rate=None, style='avid'):
 
             # Add the lines
             lines.append(str(a_side_line))
-            lines += generate_comment_lines(a_side, style=style, edl_rate=edl_rate)
+            lines += generate_comment_lines(
+                a_side,
+                style=style,
+                edl_rate=edl_rate
+            )
             lines.append(str(cut_line))
             lines.append(str(b_side_line))
-            lines += generate_comment_lines(a_side, style=style, edl_rate=edl_rate)
-            lines += generate_comment_lines(b_side, style=style, edl_rate=edl_rate, from_or_to='TO')
+            lines += generate_comment_lines(
+                a_side,
+                style=style,
+                edl_rate=edl_rate
+            )
+            lines += generate_comment_lines(
+                b_side,
+                style=style,
+                edl_rate=edl_rate,
+                from_or_to='TO'
+            )
 
             # Advance the iterater past the next 2 children (trans and clip b)
             look_ahead.next()
             look_ahead.next()
 
         else:
-            event_line = EventLine(edit_number=edit_number, kind=kind, rate=edl_rate)
+            event_line = EventLine(
+                edit_number=edit_number,
+                kind=kind,
+                rate=edl_rate
+            )
             event_line.source_in = clip.source_range.start_time
             event_line.source_out = clip.source_range.end_time_exclusive()
             range_in_track = track.range_of_child_at_index(i)
             event_line.record_in = range_in_track.start_time
             event_line.record_out = range_in_track.end_time_exclusive()
-            if clip.media_reference and isinstance(clip.media_reference, otio.schema.Gap):
+            if (
+                clip.media_reference
+                and isinstance(clip.media_reference, otio.schema.Gap)
+            ):
                 event_line.reel = 'BL'
 
             lines.append(str(event_line))
-            lines += generate_comment_lines(clip, style=style, edl_rate=edl_rate)
+            lines += generate_comment_lines(
+                clip,
+                style=style,
+                edl_rate=edl_rate
+            )
             lines.append("")
 
     text = "\n".join(lines)
@@ -695,11 +740,20 @@ def generate_comment_lines(clip, style, edl_rate, from_or_to='FROM'):
     if clip.name:
         # Avid Media Composer outputs two spaces before the
         # clip name so we match that.
-        lines.append("* {from_or_to} CLIP NAME:  {name}".format(from_or_to=from_or_to, name=clip.name))
+        lines.append("* {from_or_to} CLIP NAME:  {name}".format(
+            from_or_to=from_or_to,
+            name=clip.name
+        ))
     if url and style == 'avid':
-        lines.append("* {from_or_to} CLIP: {url}".format(from_or_to=from_or_to, url=url))
+        lines.append("* {from_or_to} CLIP: {url}".format(
+            from_or_to=from_or_to,
+            url=url
+        ))
     if url and style == 'nucoda':
-        lines.append("* {from_or_to} FILE: {url}".format(from_or_to=from_or_to, url=url))
+        lines.append("* {from_or_to} FILE: {url}".format(
+            from_or_to=from_or_to,
+            url=url
+        ))
 
     cdl = clip.metadata.get('cdl')
     if cdl:
@@ -787,10 +841,15 @@ class EventLine(object):
             'src_out': otio.opentime.to_timecode(self.source_out, self.__rate),
             'rec_in': otio.opentime.to_timecode(self.record_in, self.__rate),
             'rec_out': otio.opentime.to_timecode(self.record_out, self.__rate),
-            'diss': int(otio.opentime.to_frames(self.dissolve_length, self.__rate)),
+            'diss': int(otio.opentime.to_frames(
+                self.dissolve_length,
+                self.__rate
+            )),
         }
 
         if self.dissolve_length.value > 0:
-            return "{edit:03d}  {reel:8} {kind:5} D {diss:03d}    {src_in} {src_out} {rec_in} {rec_out}".format(**ser)
+            return "{edit:03d}  {reel:8} {kind:5} D {diss:03d}    " \
+                "{src_in} {src_out} {rec_in} {rec_out}".format(**ser)
         else:
-            return "{edit:03d}  {reel:8} {kind:5} C        {src_in} {src_out} {rec_in} {rec_out}".format(**ser)
+            return "{edit:03d}  {reel:8} {kind:5} C        " \
+                "{src_in} {src_out} {rec_in} {rec_out}".format(**ser)
