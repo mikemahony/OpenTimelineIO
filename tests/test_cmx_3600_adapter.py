@@ -449,6 +449,62 @@ class EDLAdapterTest(unittest.TestCase):
             '* FROM FILE: S:\\tmp_3\\test.exr\n'
         )
 
+    def test_nucoda_edl_write_with_transition_2(self):
+        track = otio.schema.Track()
+        tl = otio.schema.Timeline(tracks=[track])
+
+        # 001 v330_21f V  C  131 276
+        # 002 v330_23e V  C  223 423
+
+        cl = otio.schema.Clip(
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(131.0, 24.0),
+                duration=otio.opentime.RationalTime(145.0, 24.0)
+            )
+        )
+        trans = otio.schema.Transition(
+            in_offset=otio.opentime.RationalTime(50.0, 24.0),
+            out_offset=otio.opentime.RationalTime(50.0, 24.0)
+        )
+        cl2 = otio.schema.Clip(
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(223.0, 24.0),
+                duration=otio.opentime.RationalTime(200.0, 24.0)
+            )
+        )
+        cl3 = otio.schema.Clip(
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(0.0, 24.0),
+                duration=otio.opentime.RationalTime(24.0, 24.0)
+            )
+        )
+        tl.tracks[0].append(cl)
+        tl.tracks[0].append(trans)
+        tl.tracks[0].append(cl2)
+        tl.tracks[0].append(cl3)
+
+        result = otio.adapters.write_to_string(
+            tl,
+            adapter_name='cmx_3600',
+            style='nucoda'
+        )
+
+        expected = '001  AX       V     C        00:00:05:11 00:00:09:10 00:00:00:00 00:00:03:23\n' \
+            '002  AX       V     C        00:00:09:10 00:00:09:10 00:00:03:23 00:00:03:23\n' \
+            '002  AX       V     D 100    00:00:05:03 00:00:17:15 00:00:03:23 00:00:16:11\n' \
+            '003  AX       V     C        00:00:00:00 00:00:01:00 00:00:16:11 00:00:17:11\n'
+
+        print
+        print("EXPECTED:")
+        print(expected)
+        print
+
+        print("ACTUAL:")
+        print(result)
+        print
+
+        self.assertEqual(result, expected)
+
     def test_mixed_avid_nucoda_read_raises_exception(self):
         with self.assertRaises(cmx_3600.EDLParseError):
             otio.adapters.read_from_string(
