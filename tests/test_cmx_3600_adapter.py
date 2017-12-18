@@ -387,36 +387,33 @@ class EDLAdapterTest(unittest.TestCase):
 
     def test_nucoda_edl_write_with_transition(self):
         track = otio.schema.Track()
-        tl = otio.schema.Timeline("test_nucoda_timeline", tracks=[track])
-        rt = otio.opentime.RationalTime(48.0, 24.0)
-        mr1 = otio.media_reference.External(target_url=r"S:\tmp_1\test.exr")
-        mr2 = otio.media_reference.External(target_url=r"S:\tmp_2\test.exr")
-        mr3 = otio.media_reference.External(target_url=r"S:\tmp_3\test.exr")
-
-        tr = otio.opentime.TimeRange(
-            start_time=otio.opentime.RationalTime(1.0, 24.0),
-            duration=rt
+        tl = otio.schema.Timeline(
+            "CrossDissolve_Day-Night_Long_1 from CZuber",
+            tracks=[track]
         )
+
         cl = otio.schema.Clip(
-            name="test clip 1",
-            media_reference=mr1,
-            source_range=tr,
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(131.0, 24.0),
+                duration=otio.opentime.RationalTime(145.0, 24.0)
+            )
         )
         trans = otio.schema.Transition(
-            in_offset=otio.opentime.RationalTime(12.0, 24.0),
-            out_offset=otio.opentime.RationalTime(24.0, 24.0)
+            in_offset=otio.opentime.RationalTime(57.0, 24.0),
+            out_offset=otio.opentime.RationalTime(43.0, 24.0)
         )
         cl2 = otio.schema.Clip(
-            name="test clip 2",
-            media_reference=mr2,
-            source_range=tr,
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(223.0, 24.0),
+                duration=otio.opentime.RationalTime(200.0, 24.0)
+            )
         )
         cl3 = otio.schema.Clip(
-            name="test clip 3",
-            media_reference=mr3,
-            source_range=tr,
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(0.0, 24.0),
+                duration=otio.opentime.RationalTime(24.0, 24.0)
+            )
         )
-        tl.tracks[0].name = "V"
         tl.tracks[0].append(cl)
         tl.tracks[0].append(trans)
         tl.tracks[0].append(cl2)
@@ -428,26 +425,27 @@ class EDLAdapterTest(unittest.TestCase):
             style='nucoda'
         )
 
-        self.assertEqual(
-            result,
-            'TITLE: test_nucoda_timeline\n\n'
-            '001  AX       V     C        '
-            '00:00:00:01 00:00:01:13 00:00:00:00 00:00:01:12\n'
-            '* FROM CLIP NAME:  test clip 1\n'
-            '* FROM FILE: S:\\tmp_1\\test.exr\n'
-            '002  AX       V     C        '
-            '00:00:01:13 00:00:01:13 00:00:01:12 00:00:01:12\n'
-            '002  AX       V     D 036    '
-            '00:00:00:01 00:00:02:13 00:00:01:12 00:00:04:00\n'
-            '* FROM CLIP NAME:  test clip 1\n'
-            '* FROM FILE: S:\\tmp_1\\test.exr\n'
-            '* TO CLIP NAME:  test clip 2\n'
-            '* TO FILE: S:\\tmp_2\\test.exr\n'
-            '003  AX       V     C        '
-            '00:00:00:01 00:00:02:01 00:00:04:00 00:00:06:00\n'
-            '* FROM CLIP NAME:  test clip 3\n'
-            '* FROM FILE: S:\\tmp_3\\test.exr\n'
-        )
+        expected = \
+            'TITLE: CrossDissolve_Day-Night_Long_1 from CZuber\n\n' \
+            '001  AX       V     C        00:00:05:11 00:00:07:08 ' \
+            '00:00:00:00 00:00:01:21\n' \
+            '002  AX       V     C        00:00:07:08 00:00:07:08 ' \
+            '00:00:01:21 00:00:01:21\n' \
+            '002  AX       V     D 100    00:00:09:07 00:00:17:15 ' \
+            '00:00:01:21 00:00:10:05\n' \
+            '003  AX       V     C        00:00:00:00 00:00:01:00 ' \
+            '00:00:10:05 00:00:11:05\n'
+
+        print
+        print('expected')
+        print(expected)
+
+        print
+        print('actual')
+        print(result)
+        print
+
+        self.assertEqual(result, expected)
 
     def test_nucoda_edl_write_with_transition_2(self):
         track = otio.schema.Track()
