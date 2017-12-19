@@ -623,13 +623,11 @@ def write_to_string(input_otio, rate=None, style='avid'):
             )
             a_side_line.source_in = a_side.source_range.start_time
             a_side_line.source_out = a_side.source_range.end_time_exclusive() \
-                - next_clip.in_offset \
-                - next_clip.out_offset
+                - trans.in_offset
             a_range_in_track = track.range_of_child_at_index(i)
             a_side_line.record_in = a_range_in_track.start_time
             a_side_line.record_out = a_range_in_track.end_time_exclusive() \
-                - next_clip.in_offset \
-                - next_clip.out_offset
+                - trans.in_offset
             if (
                 a_side.media_reference
                 and isinstance(a_side.media_reference, otio.schema.Gap)
@@ -644,7 +642,8 @@ def write_to_string(input_otio, rate=None, style='avid'):
                 edit_number=edit_number,
                 rate=edl_rate
             )
-            b_side_line.source_in = b_side.source_range.start_time
+            b_side_line.source_in = b_side.source_range.start_time \
+                - trans.in_offset
             b_side_line.source_out = b_side.source_range.end_time_exclusive()
             b_range_in_track = track.range_of_child_at_index(i + 2)
             b_side_line.record_in = a_side_line.record_out
