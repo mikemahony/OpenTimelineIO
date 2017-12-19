@@ -615,7 +615,21 @@ def write_to_string(input_otio, rate=None, style='avid'):
         if isinstance(next_clip, otio.schema.Transition):
             a_side, trans, b_side = clip, next_clip, next_next_clip
 
-            # Add a line to represent this, SHORTER, event
+            # Transitions in EDLs are unconventionally represented.
+            #
+            # Where a trasition might normally be visualized like:
+            #   A |---------------------|\--|
+            #   B                 |----\|-------------------|
+            #                     |-----|---|
+            #                         57 43
+            #
+            # In an EDL it can be thought of more like this:
+            #   A |---------------|xxxxxxxxx|
+            #   B                 |\------------------------|
+            #                     |---------|
+            #                         100
+
+            # Event line to represent this "shorted" A side
             a_side_line = EventLine(
                 kind=kind,
                 edit_number=edit_number,
@@ -637,6 +651,7 @@ def write_to_string(input_otio, rate=None, style='avid'):
             # Advance the edit number
             edit_number += 1
 
+            # Event line to represent the "longer" B side
             b_side_line = EventLine(
                 kind=kind,
                 edit_number=edit_number,
@@ -655,7 +670,7 @@ def write_to_string(input_otio, rate=None, style='avid'):
             ):
                 b_side_line.reel = 'BL'
 
-            # Add a line to represent the middle cut
+            # Event line to represent the middle cut
             cut_line = EventLine(
                 kind=kind,
                 edit_number=edit_number,
