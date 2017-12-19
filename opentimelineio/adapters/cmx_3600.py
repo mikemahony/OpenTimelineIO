@@ -609,7 +609,7 @@ def write_to_string(input_otio, rate=None, style='avid'):
     edl_rate = rate or track.duration().rate
     kind = "V" if track.kind == otio.schema.TrackKind.Video else "A"
     look_ahead = lookahead_enumerate(track)
-    for i, clip, next_clip, next_next_clip in look_ahead:
+    for clip, next_clip, next_next_clip in look_ahead:
         edit_number += 1
 
         if isinstance(next_clip, otio.schema.Transition):
@@ -624,7 +624,7 @@ def write_to_string(input_otio, rate=None, style='avid'):
             a_side_line.source_in = a_side.source_range.start_time
             a_side_line.source_out = a_side.source_range.end_time_exclusive() \
                 - trans.in_offset
-            a_range_in_track = track.range_of_child_at_index(i)
+            a_range_in_track = a_side.range_in_parent()
             a_side_line.record_in = a_range_in_track.start_time
             a_side_line.record_out = a_range_in_track.end_time_exclusive() \
                 - trans.in_offset
@@ -645,7 +645,7 @@ def write_to_string(input_otio, rate=None, style='avid'):
             b_side_line.source_in = b_side.source_range.start_time \
                 - trans.in_offset
             b_side_line.source_out = b_side.source_range.end_time_exclusive()
-            b_range_in_track = track.range_of_child_at_index(i + 2)
+            b_range_in_track = b_side.range_in_parent()
             b_side_line.record_in = a_side_line.record_out
             b_side_line.record_out = b_range_in_track.end_time_exclusive()
             b_side_line.dissolve_length = trans.in_offset + trans.out_offset
@@ -700,7 +700,7 @@ def write_to_string(input_otio, rate=None, style='avid'):
             )
             event_line.source_in = clip.source_range.start_time
             event_line.source_out = clip.source_range.end_time_exclusive()
-            range_in_track = track.range_of_child_at_index(i)
+            range_in_track = clip.range_in_parent()
             event_line.record_in = range_in_track.start_time
             event_line.record_out = range_in_track.end_time_exclusive()
             if (
@@ -802,19 +802,17 @@ def generate_comment_lines(clip, style, edl_rate, from_or_to='FROM'):
 
 def lookahead_enumerate(iterable):
     iterator = iter(iterable)
-    i = 0
     a = iterator.next()
     try:
         b = iterator.next()
         for c in iterator:
-            yield (i, a, b, c)
-            a, b, i = b, c, i + 1
+            yield (a, b, c)
+            a, b = b, c
         b, c = a, b
-        yield (i, b, c, None)
-        i += 1
-        yield (i, c, None, None)
+        yield (b, c, None)
+        yield (c, None, None)
     except StopIteration:
-        yield (i, a, None, None)
+        yield (a, None, None)
 
 
 class EventLine(object):
