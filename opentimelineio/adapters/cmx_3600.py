@@ -629,7 +629,7 @@ def write_to_string(input_otio, rate=None, style='avid'):
             #                     |---------|
             #                         100
 
-            # Event line to represent this "shorted" A side
+            # Event line to represent this "shorter" A side
             a_side_line = EventLine(
                 kind=kind,
                 edit_number=edit_number,
@@ -680,7 +680,7 @@ def write_to_string(input_otio, rate=None, style='avid'):
                 edit_number=edit_number,
                 rate=edl_rate
             )
-            cut_line.reel = b_side_line.reel
+            cut_line.reel = a_side_line.reel
             cut_line.source_in = a_side_line.source_out
             cut_line.source_out = a_side_line.source_out
             cut_line.record_in = a_side_line.record_out

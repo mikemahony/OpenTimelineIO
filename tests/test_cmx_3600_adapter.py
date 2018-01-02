@@ -393,6 +393,7 @@ class EDLAdapterTest(unittest.TestCase):
         )
 
         cl = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel1'}},
             source_range=otio.opentime.TimeRange(
                 start_time=otio.opentime.RationalTime(131.0, 24.0),
                 duration=otio.opentime.RationalTime(102.0, 24.0)
@@ -403,21 +404,20 @@ class EDLAdapterTest(unittest.TestCase):
             out_offset=otio.opentime.RationalTime(43.0, 24.0)
         )
         cl2 = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel2'}},
             source_range=otio.opentime.TimeRange(
                 start_time=otio.opentime.RationalTime(280.0, 24.0),
                 duration=otio.opentime.RationalTime(143.0, 24.0)
             )
         )
         cl3 = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel3'}},
             source_range=otio.opentime.TimeRange(
                 start_time=otio.opentime.RationalTime(0.0, 24.0),
                 duration=otio.opentime.RationalTime(24.0, 24.0)
             )
         )
-        tl.tracks[0].append(cl)
-        tl.tracks[0].append(trans)
-        tl.tracks[0].append(cl2)
-        tl.tracks[0].append(cl3)
+        tl.tracks[0].extend([cl, trans, cl2, cl3])
 
         result = otio.adapters.write_to_string(
             tl,
@@ -427,13 +427,13 @@ class EDLAdapterTest(unittest.TestCase):
 
         expected = \
             'TITLE: CrossDissolve_Day-Night_Long_1 from CZuber\n\n' \
-            '001  AX       V     C        00:00:05:11 00:00:07:08 ' \
+            '001  Reel1    V     C        00:00:05:11 00:00:07:08 ' \
             '00:00:00:00 00:00:01:21\n' \
-            '002  AX       V     C        00:00:07:08 00:00:07:08 ' \
+            '002  Reel1    V     C        00:00:07:08 00:00:07:08 ' \
             '00:00:01:21 00:00:01:21\n' \
-            '002  AX       V     D 100    00:00:09:07 00:00:17:15 ' \
+            '002  Reel2    V     D 100    00:00:09:07 00:00:17:15 ' \
             '00:00:01:21 00:00:10:05\n' \
-            '003  AX       V     C        00:00:00:00 00:00:01:00 ' \
+            '003  Reel3    V     C        00:00:00:00 00:00:01:00 ' \
             '00:00:10:05 00:00:11:05\n'
 
         self.assertEqual(result, expected)
