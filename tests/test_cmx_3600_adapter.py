@@ -372,18 +372,19 @@ class EDLAdapterTest(unittest.TestCase):
             adapter_name='cmx_3600',
             style='nucoda'
         )
-        self.assertEqual(
-            result,
-            'TITLE: test_nucoda_timeline\n\n'
-            '001  AX       V     C        '
-            '00:00:00:00 00:00:00:05 00:00:00:00 00:00:00:05\n'
-            '* FROM CLIP NAME:  test clip1\n'
-            '* FROM FILE: S:\\var\\tmp\\test.exr\n\n'
-            '002  AX       V     C        '
-            '00:00:00:00 00:00:00:05 00:00:00:05 00:00:00:10\n'
-            '* FROM CLIP NAME:  test clip2\n'
+
+        expected = \
+            'TITLE: test_nucoda_timeline\n\n' \
+            '001  AX       V     C        ' \
+            '00:00:00:00 00:00:00:05 00:00:00:00 00:00:00:05\n' \
+            '* FROM CLIP NAME:  test clip1\n' \
+            '* FROM FILE: S:\\var\\tmp\\test.exr\n' \
+            '002  AX       V     C        ' \
+            '00:00:00:00 00:00:00:05 00:00:00:05 00:00:00:10\n' \
+            '* FROM CLIP NAME:  test clip2\n' \
             '* FROM FILE: S:\\var\\tmp\\test.exr\n'
-        )
+
+        self.assertEqual(result, expected)
 
     def test_nucoda_edl_write_with_transition(self):
         track = otio.schema.Track()
@@ -438,6 +439,61 @@ class EDLAdapterTest(unittest.TestCase):
 
         self.assertEqual(result, expected)
 
+    def test_nucoda_edl_write_with_double_transition(self):
+        track = otio.schema.Track()
+        tl = otio.schema.Timeline(tracks=[track])
+
+        cl = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel1'}},
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(24.0, 24.0),
+                duration=otio.opentime.RationalTime(24.0, 24.0)
+            )
+        )
+        trans = otio.schema.Transition(
+            in_offset=otio.opentime.RationalTime(6.0, 24.0),
+            out_offset=otio.opentime.RationalTime(6.0, 24.0)
+        )
+        cl2 = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel2'}},
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(24.0, 24.0),
+                duration=otio.opentime.RationalTime(24.0, 24.0)
+            )
+        )
+        trans2 = otio.schema.Transition(
+            in_offset=otio.opentime.RationalTime(6.0, 24.0),
+            out_offset=otio.opentime.RationalTime(6.0, 24.0)
+        )
+        cl3 = otio.schema.Clip(
+            metadata={'cmx_3600': {'reel': 'Reel3'}},
+            source_range=otio.opentime.TimeRange(
+                start_time=otio.opentime.RationalTime(24.0, 24.0),
+                duration=otio.opentime.RationalTime(24.0, 24.0)
+            )
+        )
+        tl.tracks[0].extend([cl, trans, cl2, trans2, cl3])
+
+        result = otio.adapters.write_to_string(
+            tl,
+            adapter_name='cmx_3600',
+            style='nucoda'
+        )
+
+        expected = \
+            '001  Reel1    V     C        ' \
+            '00:00:01:00 00:00:01:18 00:00:00:00 00:00:00:18\n' \
+            '002  Reel1    V     C        ' \
+            '00:00:01:18 00:00:01:18 00:00:00:18 00:00:00:18\n' \
+            '002  Reel2    V     D 012    ' \
+            '00:00:00:18 00:00:01:18 00:00:00:18 00:00:01:18\n' \
+            '003  Reel2    V     C        ' \
+            '00:00:01:18 00:00:01:18 00:00:01:18 00:00:01:18\n' \
+            '003  Reel3    V     D 012    ' \
+            '00:00:00:18 00:00:02:00 00:00:01:18 00:00:03:00\n'
+
+        self.assertEqual(result, expected)
+
     def test_custom_reel_names(self):
         track = otio.schema.Track()
         tl = otio.schema.Timeline(tracks=[track])
@@ -487,6 +543,23 @@ class EDLAdapterTest(unittest.TestCase):
                 adapter_name='cmx_3600',
                 style='bogus'
             )
+
+
+class UtilsTest(unittest.TestCase):
+
+    def test_lookahead_and_behind_enumerate(self):
+        result = []
+        for window in cmx_3600.lookahead_and_behind_enumerate(range(0,6)):
+            result.append(window)
+
+        expected = [(None, 0, 1),
+                    (0, 1, 2),
+                    (1, 2, 3),
+                    (2, 3, 4),
+                    (3, 4, 5),
+                    (4, 5, None)]
+
+        self.assertEqual(result, expected)
 
 
 if __name__ == '__main__':

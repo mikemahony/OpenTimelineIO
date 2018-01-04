@@ -594,151 +594,96 @@ def write_to_string(input_otio, rate=None, style='avid'):
     #         "No audio tracks are currently supported."
     #     )
 
-    lines = []
-
-    if input_otio.name:
-        lines.append("TITLE: {}".format(input_otio.name))
-        lines.append("")
-
     # TODO: We should try to detect the frame rate and output an
     # appropriate "FCM: NON-DROP FRAME" etc here.
-
-    edit_number = 0
 
     track = input_otio.tracks[0]
     edl_rate = rate or track.duration().rate
     kind = "V" if track.kind == otio.schema.TrackKind.Video else "A"
-    look_ahead = lookahead_enumerate(track)
-    for clip, next_clip, next_next_clip in look_ahead:
+
+    # Transitions in EDLs are unconventionally represented.
+    #
+    # Where a trasition might normally be visualized like:
+    #   A |---------------------|\--|
+    #   B                 |----\|-------------------|
+    #                     |-----|---|
+    #                         57 43
+    #
+    # In an EDL it can be thought of more like this:
+    #   A |---------------|xxxxxxxxx|
+    #   B                 |\------------------------|
+    #                     |---------|
+    #                         100
+
+    edit_number = 0
+    clips_and_events = []
+    for prev_child, child, next_child in lookahead_and_behind_enumerate(track):
+        if isinstance(child, otio.schema.Transition):
+            continue
+
         edit_number += 1
 
-        if isinstance(next_clip, otio.schema.Transition):
-            a_side, trans, b_side = clip, next_clip, next_next_clip
+        event = EventLine(
+            kind=kind,
+            edit_number=edit_number,
+            rate=edl_rate
+        )
+        event.source_in = child.source_range.start_time
+        event.source_out = child.source_range.end_time_exclusive()
+        range_in_track = child.range_in_parent()
+        event.record_in = range_in_track.start_time
+        event.record_out = range_in_track.end_time_exclusive()
 
-            # Transitions in EDLs are unconventionally represented.
-            #
-            # Where a trasition might normally be visualized like:
-            #   A |---------------------|\--|
-            #   B                 |----\|-------------------|
-            #                     |-----|---|
-            #                         57 43
-            #
-            # In an EDL it can be thought of more like this:
-            #   A |---------------|xxxxxxxxx|
-            #   B                 |\------------------------|
-            #                     |---------|
-            #                         100
+        if isinstance(next_child, otio.schema.Transition):
+            trans = next_child
+            a_side_event = event
 
-            # Event line to represent this "shorter" A side
-            a_side_line = EventLine(
-                kind=kind,
-                edit_number=edit_number,
-                rate=edl_rate
-            )
-            a_side_line.source_in = a_side.source_range.start_time
-            a_side_line.source_out = a_side.source_range.end_time_exclusive() \
-                - trans.in_offset
-            a_range_in_track = a_side.range_in_parent()
-            a_side_line.record_in = a_range_in_track.start_time
-            a_side_line.record_out = a_range_in_track.end_time_exclusive() \
-                - trans.in_offset
-            if (
-                a_side.media_reference
-                and isinstance(a_side.media_reference, otio.schema.Gap)
-            ):
-                a_side_line.reel = 'BL'
-            elif a_side.metadata.get('cmx_3600', {}).get('reel'):
-                a_side_line.reel = a_side.metadata.get('cmx_3600').get('reel')
+            # Shorten this, the A-side
+            a_side_event.source_out -= trans.in_offset
+            a_side_event.record_out -=  trans.in_offset
 
-            # Advance the edit number
-            edit_number += 1
+        if isinstance(prev_child, otio.schema.Transition):
+            a_side, a_side_event = clips_and_events[-1]
+            b_side, b_side_event = child, event
+            trans = prev_child
 
-            # Event line to represent the "longer" B side
-            b_side_line = EventLine(
-                kind=kind,
-                edit_number=edit_number,
-                rate=edl_rate
-            )
-            b_side_line.source_in = b_side.source_range.start_time \
-                - trans.in_offset
-            b_side_line.source_out = b_side.source_range.end_time_exclusive()
-            b_range_in_track = b_side.range_in_parent()
-            b_side_line.record_in = a_side_line.record_out
-            b_side_line.record_out = b_range_in_track.end_time_exclusive()
-            b_side_line.dissolve_length = trans.in_offset + trans.out_offset
-            if (
-                b_side.media_reference
-                and isinstance(b_side.media_reference, otio.schema.Gap)
-            ):
-                b_side_line.reel = 'BL'
-            elif b_side.metadata.get('cmx_3600', {}).get('reel'):
-                b_side_line.reel = b_side.metadata.get('cmx_3600').get('reel')
-
-            # Event line to represent the middle cut
+            # Add A-side cut
             cut_line = EventLine(
                 kind=kind,
                 edit_number=edit_number,
                 rate=edl_rate
             )
-            cut_line.reel = a_side_line.reel
-            cut_line.source_in = a_side_line.source_out
-            cut_line.source_out = a_side_line.source_out
-            cut_line.record_in = a_side_line.record_out
-            cut_line.record_out = a_side_line.record_out
+            cut_line.reel = a_side_event.reel
+            cut_line.source_in = a_side_event.source_out
+            cut_line.source_out = a_side_event.source_out
+            cut_line.record_in = a_side_event.record_out
+            cut_line.record_out = a_side_event.record_out
+            clips_and_events += [(None, cut_line)]
 
-            # Add the lines
-            lines.append(str(a_side_line))
-            lines += generate_comment_lines(
-                a_side,
-                style=style,
-                edl_rate=edl_rate
-            )
-            lines.append(str(cut_line))
-            lines.append(str(b_side_line))
-            lines += generate_comment_lines(
-                a_side,
-                style=style,
-                edl_rate=edl_rate
-            )
-            lines += generate_comment_lines(
-                b_side,
-                style=style,
-                edl_rate=edl_rate,
-                from_or_to='TO'
-            )
+            # Lengthen B-side, adding dissolve
+            b_side_event.source_in -= trans.in_offset
+            b_side_event.record_in = a_side_event.record_out
+            b_side_event.dissolve_length = trans.in_offset + trans.out_offset
 
-            # Advance the iterater past the next 2 children (trans and clip b)
-            look_ahead.next()
-            look_ahead.next()
+        event.reel = reel_from_clip(child)
 
-        else:
-            event_line = EventLine(
-                edit_number=edit_number,
-                kind=kind,
-                rate=edl_rate
-            )
-            event_line.source_in = clip.source_range.start_time
-            event_line.source_out = clip.source_range.end_time_exclusive()
-            range_in_track = clip.range_in_parent()
-            event_line.record_in = range_in_track.start_time
-            event_line.record_out = range_in_track.end_time_exclusive()
-            if (
-                clip.media_reference
-                and isinstance(clip.media_reference, otio.schema.Gap)
-            ):
-                event_line.reel = 'BL'
-            elif clip.metadata.get('cmx_3600', {}).get('reel'):
-                event_line.reel = clip.metadata.get('cmx_3600').get('reel')
+        clips_and_events += [(child, event)]
 
-            lines.append(str(event_line))
+    lines = []
+
+    if input_otio.name:
+        lines += ["TITLE: {}".format(input_otio.name), ""]
+
+    for clip, event in clips_and_events:
+        lines += [str(event)]
+        if clip:
             lines += generate_comment_lines(
                 clip,
                 style=style,
                 edl_rate=edl_rate
             )
-            lines.append("")
 
-    text = "\n".join(lines)
+    text = "\n".join(lines) + "\n"
     return text
 
 
@@ -821,19 +766,25 @@ def generate_comment_lines(clip, style, edl_rate, from_or_to='FROM'):
     return lines
 
 
-def lookahead_enumerate(iterable):
+def lookahead_and_behind_enumerate(iterable):
+    prv = None
     iterator = iter(iterable)
-    a = iterator.next()
-    try:
-        b = iterator.next()
-        for c in iterator:
-            yield (a, b, c)
-            a, b = b, c
-        b, c = a, b
-        yield (b, c, None)
-        yield (c, None, None)
-    except StopIteration:
-        yield (a, None, None)
+    cur = next(iterator)
+    for nxt in iterator:
+        yield (prv, cur, nxt)
+        prv, cur = cur, nxt
+    yield (prv, cur, None)
+
+
+def reel_from_clip(clip):
+    if (
+        clip.media_reference
+        and isinstance(clip.media_reference, otio.schema.Gap)
+    ):
+        return 'BL'
+    elif clip.metadata.get('cmx_3600', {}).get('reel'):
+        return clip.metadata.get('cmx_3600').get('reel')
+    return 'AX'
 
 
 class EventLine(object):
