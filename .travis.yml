@@ -3,10 +3,28 @@ python:
     - "2.7"
     - "3.5"
 
+env:
+    global:
+        - OTIO_AAF_PYTHON_LIB=
+        - AAF_ROOT=/tmp/aaf-devel-libs
+
+before_install:
+    - wget -qO /tmp/AAF-devel-libs.tar.gz http://downloads.sourceforge.net/project/aaf/AAF-devel-libs/1.1.6/AAF-devel-libs-x86_64Linux-1.1.6.0.tar.gz &&
+      mkdir -p ${AAF_ROOT} &&
+      tar -xzvf /tmp/AAF-devel-libs.tar.gz -C ${AAF_ROOT}
+    - wget -qO /tmp/pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip &&
+      unzip /tmp/pyaaf.zip -d /tmp/
+
 install:
+    - pip install --only-binary=numpy,scipy,Cython numpy scipy Cython
+    - python /tmp/pyaaf-master/setup.py build_ext --inplace &&
+      make -C /tmp/pyaaf-master dev &&
+      make -C /tmp/pyaaf-master build &&
+      make -C /tmp/pyaaf-master install
     - pip install pep8 pyflakes flake8 coverage Pillow
 
 script:
     - make lint
     - make test
+    - make test-contrib
     - make coverage
