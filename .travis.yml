@@ -10,9 +10,9 @@ env:
 
 install:
   - pip install --only-binary=numpy,scipy numpy scipy
-  - wget -qO https://github.com/markreidvfx/pyaaf/archive/master.zip /tmp/pyaaf &&
+  - wget -qO pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip /tmp/pyaaf &&
     cd /tmp &&
-    unzip pyaaf &&
+    unzip pyaaf.zip &&
     cd pyaaf &&
     python setup.py build_ext --inplace &&
     make dev &&
