@@ -10,7 +10,7 @@ env:
 
 install:
   - pip install --only-binary=numpy,scipy numpy scipy
-  - wget -qO pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip /tmp/pyaaf &&
+  - wget -qO pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip &&
     cd /tmp &&
     unzip pyaaf.zip &&
     cd pyaaf &&
