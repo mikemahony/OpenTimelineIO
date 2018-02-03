@@ -5,17 +5,18 @@ python:
 
 env:
   global:
-    - PYAAF=PyAAF-1.0.0-cp27-cp27mu-manylinux1_x86_64.whl
     - VERBOSE=1
     - OTIO_AAF_PYTHON_LIB=
 
-before_install: 
-  - wget -qO /tmp/${PYAAF} "https://github.com/markreidvfx/pyaaf/releases/download/v1.0.0/${PYAAF}"
-
 install:
+  - pip install --only-binary=numpy,scipy numpy scipy
+  - clone https://github.com/markreidvfx/pyaaf.git /tmp/pyaaf && \
+    cd /tmp/pyaaf && \
+    python setup.py build_ext --inplace && \
+    make dev && \
+    make build && \
+    make install
   - pip install pep8 pyflakes flake8 coverage Pillow
-  - pip install --upgrade pip setuptools wheel
-  - pip install /tmp/${PYAAF}
 
 script:
   - make lint
