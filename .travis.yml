@@ -10,11 +10,13 @@ env:
 
 install:
   - pip install --only-binary=numpy,scipy numpy scipy
-  - git clone https://github.com/markreidvfx/pyaaf.git /tmp/pyaaf && \
-    cd /tmp/pyaaf && \
-    python setup.py build_ext --inplace && \
-    make dev && \
-    make build && \
+  - wget -qO https://github.com/markreidvfx/pyaaf/archive/master.zip /tmp/pyaaf &&
+    cd /tmp &&
+    unzip pyaaf &&
+    cd pyaaf &&
+    python setup.py build_ext --inplace &&
+    make dev &&
+    make build &&
     make install
   - pip install pep8 pyflakes flake8 coverage Pillow
 
