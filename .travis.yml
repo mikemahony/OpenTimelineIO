@@ -10,7 +10,7 @@ env:
 
 install:
   - pip install --only-binary=numpy,scipy numpy scipy
-  - clone https://github.com/markreidvfx/pyaaf.git /tmp/pyaaf && \
+  - git clone https://github.com/markreidvfx/pyaaf.git /tmp/pyaaf && \
     cd /tmp/pyaaf && \
     python setup.py build_ext --inplace && \
     make dev && \
