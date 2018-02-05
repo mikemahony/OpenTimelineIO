@@ -5,7 +5,6 @@ python:
 
 env:
   global:
-    - VERBOSE=1
     - OTIO_AAF_PYTHON_LIB=
     - AAF_ROOT=/tmp/aaf-devel-libs
 
@@ -14,20 +13,14 @@ before_install:
     mkdir -p ${AAF_ROOT} &&
     tar -xzvf /tmp/AAF-devel-libs.tar.gz -C ${AAF_ROOT}
   - wget -qO /tmp/pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip &&
-    pushd /tmp &&
-    unzip pyaaf.zip &&
-    popd
+    unzip /tmp/pyaaf.zip -d /tmp/
 
 install:
   - pip install --only-binary=numpy,scipy,Cython numpy scipy Cython
   - pushd /tmp/pyaaf-master &&
-    echo build_ext &&
     python setup.py build_ext --inplace &&
-    echo make dev &&
     make dev &&
-    echo make build &&
     make build &&
-    echo make install &&
     make install &&
     popd
   - pip install pep8 pyflakes flake8 coverage Pillow
