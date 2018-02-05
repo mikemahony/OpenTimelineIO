@@ -9,7 +9,7 @@ env:
     - OTIO_AAF_PYTHON_LIB=
 
 install:
-  - pip install --only-binary=numpy,scipy numpy scipy --only-binary=Cython
+  - pip install --only-binary=numpy,scipy,Cython numpy scipy Cython
   - wget -qO /tmp/pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip &&
     cd /tmp &&
     ls -latrh &&
