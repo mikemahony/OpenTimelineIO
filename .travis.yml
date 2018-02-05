@@ -22,7 +22,7 @@ before_install:
 
 install:
   - pip install --only-binary=numpy,scipy,Cython numpy scipy Cython
-  - cd /tmp/pyaaf-master &&
+  - pushd /tmp/pyaaf-master &&
     echo build_ext &&
     python setup.py build_ext --inplace &&
     echo make dev &&
@@ -30,7 +30,8 @@ install:
     echo make build &&
     make build &&
     echo make install &&
-    make install
+    make install && 
+    popd
   - pip install pep8 pyflakes flake8 coverage Pillow
 
 script:
