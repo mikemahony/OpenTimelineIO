@@ -12,8 +12,11 @@ install:
   - pip install --only-binary=numpy,scipy numpy scipy
   - wget -qO /tmp/pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip &&
     cd /tmp &&
+    ls -latrh &&
     unzip pyaaf.zip &&
+    ls -latrh &&
     cd pyaaf &&
+    ls -latrh &&
     python setup.py build_ext --inplace &&
     make dev &&
     make build &&
