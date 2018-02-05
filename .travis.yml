@@ -15,7 +15,7 @@ install:
     ls -latrh &&
     unzip pyaaf.zip &&
     ls -latrh &&
-    cd pyaaf &&
+    cd pyaaf-master &&
     ls -latrh &&
     python setup.py build_ext --inplace &&
     make dev &&
