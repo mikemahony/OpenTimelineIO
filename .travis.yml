@@ -8,18 +8,25 @@ env:
     - VERBOSE=1
     - OTIO_AAF_PYTHON_LIB=
 
-install:
-  - pip install --only-binary=numpy,scipy,Cython numpy scipy Cython
+before_install:
+  - wget -qO /tmp/AAF-devel-libs.tar.gz http://downloads.sourceforge.net/project/aaf/AAF-devel-libs/1.1.6/AAF-devel-libs-x86_64Linux-1.1.6.0.tar.gz &&
+    ls -latrh &&
+    tar -xzvf /tmp/AAF-devel-libs.tar.gz && 
+    ls -latrh
   - wget -qO /tmp/pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip &&
     cd /tmp &&
-    ls -latrh &&
-    unzip pyaaf.zip &&
-    ls -latrh &&
-    cd pyaaf-master &&
-    ls -latrh &&
+    unzip pyaaf.zip
+
+install:
+  - pip install --only-binary=numpy,scipy,Cython numpy scipy Cython
+  - cd /tmp/pyaaf-master &&
+    echo build_ext && \
     python setup.py build_ext --inplace &&
+    echo make dev && \
     make dev &&
+    echo make build && \
     make build &&
+    echo make install && \
     make install
   - pip install pep8 pyflakes flake8 coverage Pillow
 
