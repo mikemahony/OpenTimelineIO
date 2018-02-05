@@ -11,14 +11,12 @@ env:
 
 before_install:
   - wget -qO /tmp/AAF-devel-libs.tar.gz http://downloads.sourceforge.net/project/aaf/AAF-devel-libs/1.1.6/AAF-devel-libs-x86_64Linux-1.1.6.0.tar.gz &&
-    ls -latrh &&
     mkdir -p ${AAF_ROOT} &&
-    tar -xzvf /tmp/AAF-devel-libs.tar.gz -C ${AAF_ROOT} &&
-    cd ${AAF_ROOT} &&
-    ls -latrh
+    tar -xzvf /tmp/AAF-devel-libs.tar.gz -C ${AAF_ROOT}
   - wget -qO /tmp/pyaaf.zip https://github.com/markreidvfx/pyaaf/archive/master.zip &&
-    cd /tmp &&
-    unzip pyaaf.zip
+    pushd /tmp &&
+    unzip pyaaf.zip &&
+    popd
 
 install:
   - pip install --only-binary=numpy,scipy,Cython numpy scipy Cython
@@ -30,7 +28,7 @@ install:
     echo make build &&
     make build &&
     echo make install &&
-    make install && 
+    make install &&
     popd
   - pip install pep8 pyflakes flake8 coverage Pillow
 
