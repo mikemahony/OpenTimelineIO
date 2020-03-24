@@ -667,8 +667,6 @@ V     C        00:00:00:00 00:00:00:05 00:00:00:00 00:00:00:05
 * FROM FILE: /var/tmp/clip1.001.exr
 002  Clip1    V     C        00:00:07:08 00:00:07:08 00:00:01:21 00:00:01:21
 002  Clip2    V     D 100    00:00:09:07 00:00:17:15 00:00:01:21 00:00:10:05
-* FROM CLIP NAME:  Clip1
-* FROM FILE: /var/tmp/clip1.001.exr
 * TO CLIP NAME:  Clip2
 * TO FILE: /var/tmp/clip2.001.exr
 003  Clip3    V     C        00:00:00:00 00:00:01:00 00:00:10:05 00:00:11:05
@@ -755,8 +753,6 @@ V     C        00:00:00:00 00:00:00:05 00:00:00:00 00:00:00:05
 * FROM FILE: /var/tmp/clip.001.exr
 002  My_Clip  V     C        00:00:01:12 00:00:01:12 00:00:00:12 00:00:00:12
 002  BL       V     D 012    00:00:00:00 00:00:00:12 00:00:00:12 00:00:01:00
-* FROM CLIP NAME:  My Clip
-* FROM FILE: /var/tmp/clip.001.exr
 '''
 
         self.assertMultiLineEqual(result, expected)

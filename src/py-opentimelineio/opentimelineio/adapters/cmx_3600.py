@@ -1027,13 +1027,6 @@ class DissolveEvent(object):
             cut_line.record_in = a_side_event.record_out
             cut_line.record_out = a_side_event.record_out
 
-            self.from_comments = _generate_comment_lines(
-                clip=a_side_event.clip,
-                style=style,
-                edl_rate=rate,
-                reelname_len=reelname_len,
-                from_or_to='FROM'
-            )
         else:
             cut_line.reel = 'BL'
             cut_line.source_in = opentime.RationalTime(0.0, rate)
@@ -1093,8 +1086,6 @@ class DissolveEvent(object):
         Cross dissolve...
         002 Clip1 V C     00:00:07:08 00:00:07:08 00:00:01:21 00:00:01:21
         002 Clip2 V D 100 00:00:09:07 00:00:17:15 00:00:01:21 00:00:10:05
-        * FROM CLIP NAME:  Clip1
-        * FROM CLIP: /var/tmp/clip1.001.exr
         * TO CLIP NAME:  Clip2
         * TO CLIP: /var/tmp/clip2.001.exr
 
@@ -1107,15 +1098,12 @@ class DissolveEvent(object):
         Fade out...
         002 My_Clip V C     00:00:01:12 00:00:01:12 00:00:00:12 00:00:00:12
         002 BL      V D 012 00:00:00:00 00:00:00:12 00:00:00:12 00:00:01:00
-        * FROM CLIP NAME:  My Clip
-        * FROM FILE: /var/tmp/clip.001.exr
         """
 
         lines = [
             self.cut_line.to_edl_format(self.edit_number),
             self.dissolve_line.to_edl_format(self.edit_number)
         ]
-        lines += self.from_comments if hasattr(self, 'from_comments') else []
         lines += self.to_comments if len(self.to_comments) else []
 
         return "\n".join(lines)
